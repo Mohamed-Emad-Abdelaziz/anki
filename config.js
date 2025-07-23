@@ -1,2 +1,2 @@
 /* config.js — put your own Web App URL here */
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3RI5cJ1Ne0WnLFefhN6BRYExPBXtqYTqKBX3dfWa4s80EQa8qCKgNcNjNqgIY2QET/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0gr49ZOuiRO-oLqp_a1vw34XwzY866yC65aDxDwL_xvw4wE0QlpqQiIrYjNVuJosD/exec';
