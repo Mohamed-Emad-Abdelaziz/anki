@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Anki Card Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Anki Card Manager</h1>
+  </header>
+
+  <main>
+    <!-- Subjects -->
+    <section id="subject-section">
+      <h2>Subjects</h2>
+      <input id="new-subject" placeholder="Add new subject…" />
+      <button id="add-subject-btn">+ Add Subject</button>
+      <select id="subject-select" size="4"></select>
+    </section>
+
+    <!-- Chapters -->
+    <section id="chapter-section">
+      <h2>Chapters</h2>
+      <input id="new-chapter" placeholder="Add new chapter…" />
+      <button id="add-chapter-btn">+ Add Chapter</button>
+      <select id="chapter-select" size="4"></select>
+    </section>
+
+    <!-- New Card -->
+    <section id="card-section">
+      <h2>New Card</h2>
+      <textarea id="front" rows="3" placeholder="Front (Question)…"></textarea>
+      <textarea id="back"  rows="3" placeholder="Back (Answer)…"></textarea>
+      <button id="save-card-btn">💾 Save Card</button>
+    </section>
+
+    <!-- Review Button -->
+    <button id="view-cards-btn">📖 View Cards</button>
+
+    <!-- Rendered Cards -->
+    <section id="cards-container"></section>
+
+    <!-- Status -->
+    <p id="status"></p>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
