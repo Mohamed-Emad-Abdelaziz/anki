@@ -1,132 +1,138 @@
-/*****  app.js  *****/
-const subjectSelect  = document.getElementById('subject-select');
-const chapterSelect  = document.getElementById('chapter-select');
-const statusEl       = document.getElementById('status');
-const cardsContainer = document.getElementById('cards-container');
+/***** app.js – النسخة المنيعة ضد الأخطاء *****/
+const $S  = id => document.getElementById(id);
+const subjectSelect  = $S('subject-select');
+const chapterSelect  = $S('chapter-select');
+const statusEl       = $S('status');
+const cardsContainer = $S('cards-container');
 
-let subjects = {};   // { subject: { chapters:Set() } }
+let subjects   = {};       // {subject:{chapters:Set()}}
+let statusLock = false;    // يمنع العبث بـ #status أثناء تحميل الكروت
 
-/* ---------- Helpers ---------- */
+/* ---------- دالّة مساعدة: تنظيف القيمة ---------- */
+function tidy(x){ return (x ?? '').toString().trim(); }
+
+/* ---------- تحديث قائمة منسدلة ---------- */
 function updateDropdown(selectEl, items){
   selectEl.innerHTML = '';
   items.forEach(item=>{
     const opt = document.createElement('option');
-    opt.textContent = item;
-    opt.value = item;
+    opt.value = opt.textContent = item;
     selectEl.appendChild(opt);
   });
 }
 
-/* ========= NEW: load lists from Sheets on page load ========= */
-async function loadSubjectsFromSheets(){
+/* ---------- كتابة حالة (مع احترام القفل) ---------- */
+const setStatus = msg => { if(!statusLock) statusEl.textContent = msg; };
+
+/* ========== مزامنة أولية من Sheets ========== */
+async function syncFromSheets(){
   try{
-    statusEl.textContent = 'Syncing…';
-    const res   = await fetch(GOOGLE_SCRIPT_URL);   // GET كل البطاقات
+    setStatus('Syncing…');
+    const res   = await fetch(GOOGLE_SCRIPT_URL);
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const cards = await res.json();
 
-    // إعادة بناء هيكل subjects ← chapters
     subjects = {};
     cards.forEach(card=>{
-      if(!subjects[card.subject]) subjects[card.subject] = {chapters:new Set()};
-      subjects[card.subject].chapters.add(card.chapter);
+      const s = tidy(card.subject);
+      const c = tidy(card.chapter);
+      if(!s || !c) return;                    // تجاهل الصفوف الناقصة
+      if(!subjects[s]) subjects[s] = {chapters:new Set()};
+      subjects[s].chapters.add(c);
     });
 
     updateDropdown(subjectSelect, Object.keys(subjects));
     subjectSelect.dispatchEvent(new Event('change'));
-    statusEl.textContent = `Loaded ${cards.length} card(s)`;
+    setStatus(`Loaded ${cards.length} total card(s)`);
   }catch(err){
     console.error(err);
-    statusEl.textContent = '❌ '+err.message;
+    setStatus('❌ '+err.message);
   }
 }
+window.addEventListener('DOMContentLoaded', syncFromSheets);
 
-/* —— استدعِ المزامنة أول ما الـ DOM يجهز —— */
-window.addEventListener('DOMContentLoaded', loadSubjectsFromSheets);
-
-/* ---------- Subjects ---------- */
-document.getElementById('add-subject-btn').onclick = ()=>{
-  const name = document.getElementById('new-subject').value.trim();
+/* ---------- إضافة مادة ---------- */
+$S('add-subject-btn').onclick = ()=>{
+  const name = tidy($S('new-subject').value);
   if(!name) return;
   if(!subjects[name]) subjects[name] = {chapters:new Set()};
   updateDropdown(subjectSelect, Object.keys(subjects));
-  document.getElementById('new-subject').value='';
+  $S('new-subject').value='';
   subjectSelect.value = name;
   subjectSelect.dispatchEvent(new Event('change'));
 };
 subjectSelect.onchange = ()=>{
-  const chapList = subjects[subjectSelect.value]?.chapters || new Set();
-  updateDropdown(chapterSelect, [...chapList]);
+  const list = subjects[subjectSelect.value]?.chapters || new Set();
+  updateDropdown(chapterSelect, [...list]);
 };
 
-/* ---------- Chapters ---------- */
-document.getElementById('add-chapter-btn').onclick = ()=>{
-  const name = document.getElementById('new-chapter').value.trim();
-  const subj = subjectSelect.value;
+/* ---------- إضافة فصل ---------- */
+$S('add-chapter-btn').onclick = ()=>{
+  const name = tidy($S('new-chapter').value);
+  const subj = tidy(subjectSelect.value);
   if(!name || !subj) return alert('Select a subject first');
   subjects[subj].chapters.add(name);
   updateDropdown(chapterSelect, [...subjects[subj].chapters]);
-  document.getElementById('new-chapter').value='';
+  $S('new-chapter').value='';
   chapterSelect.value = name;
 };
 
-/* ---------- Save Card ---------- */
-document.getElementById('save-card-btn').onclick = async ()=>{
-  const subj  = subjectSelect.value;
-  const chap  = chapterSelect.value;
-  const front = document.getElementById('front').value.trim();
-  const back  = document.getElementById('back').value.trim();
+/* ---------- حفظ بطاقة ---------- */
+$S('save-card-btn').onclick = async ()=>{
+  const subj  = tidy(subjectSelect.value);
+  const chap  = tidy(chapterSelect.value);
+  const front = tidy($S('front').value);
+  const back  = tidy($S('back').value);
   if(!subj || !chap || !front || !back) return alert('Fill all fields');
 
   const payload = {subject:subj, chapter:chap, front, back};
   try{
-    statusEl.textContent='Saving…';
+    setStatus('Saving…');
     const res = await fetch(GOOGLE_SCRIPT_URL,{
-      method : 'POST',
-      headers: {'Content-Type':'text/plain;charset=utf-8'},
-      body   : JSON.stringify(payload)
+      method :'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body   :JSON.stringify(payload)
     });
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    statusEl.textContent='✅ Saved!';
-    document.getElementById('front').value='';
-    document.getElementById('back').value ='';
-
-    /* NEW: أعد المزامنة عشان القوائم تتحدث فورًا */
-    loadSubjectsFromSheets();
+    setStatus('✅ Saved!');
+    $S('front').value=''; $S('back').value='';
+    await syncFromSheets();              // تحدّث القوائم فورًا
   }catch(err){
     console.error(err);
-    statusEl.textContent='❌ '+err.message;
+    setStatus('❌ '+err.message);
   }
 };
 
-/* ---------- View Cards ---------- */
-document.getElementById('view-cards-btn').onclick = async ()=>{
-  const subj = subjectSelect.value;
-  const chap = chapterSelect.value;
+/* ---------- عرض البطاقات ---------- */
+$S('view-cards-btn').onclick = async ()=>{
+  const subj = tidy(subjectSelect.value);
+  const chap = tidy(chapterSelect.value);
   if(!subj || !chap) return alert('اختر مادة ثم فصل');
 
-  statusEl.textContent='Loading…';
+  statusLock=true; setStatus('Loading…');
   try{
-    const url  = `${GOOGLE_SCRIPT_URL}?subject=${encodeURIComponent(subj)}&chapter=${encodeURIComponent(chap)}`;
-    const res  = await fetch(url);
+    const url = `${GOOGLE_SCRIPT_URL}?subject=${encodeURIComponent(subj)}&chapter=${encodeURIComponent(chap)}`;
+    const res = await fetch(url);
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const cards = await res.json();
 
     cardsContainer.innerHTML='';
     cards.forEach(card=>{
-      const cardEl = document.createElement('div');
-      cardEl.className='card';
-      cardEl.innerHTML=`
+      const el = document.createElement('div');
+      el.className='card';
+      el.innerHTML=`
         <div class="inner">
           <div class="face front">${card.front}</div>
           <div class="face back">${card.back}</div>
         </div>`;
-      cardEl.onclick = ()=>cardEl.classList.toggle('flipped');
-      cardsContainer.appendChild(cardEl);
+      el.onclick = ()=>el.classList.toggle('flipped');
+      cardsContainer.appendChild(el);
     });
-    statusEl.textContent=`${cards.length} card(s) loaded`;
+    setStatus(`${cards.length} card(s) loaded`);
   }catch(err){
     console.error(err);
-    statusEl.textContent='❌ '+err.message;
+    setStatus('❌ '+err.message);
+  }finally{
+    statusLock=false;
   }
 };
