@@ -3,13 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Anki Card Manager</title>
+  <title>Anki Card Manager</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Anki Card Manager</h1>
-  </header>
+  <header><h1>Anki Card Manager</h1></header>
 
   <main>
     <!-- Subjects -->
@@ -28,16 +26,27 @@
       <select id="chapter-select" size="4"></select>
     </section>
 
-    <!-- New Card -->
+    <!-- New Text Card -->
     <section id="card-section">
-      <h2>New Card</h2>
+      <h2>New Text Card</h2>
       <textarea id="front" rows="3" placeholder="Front (Question)…"></textarea>
       <textarea id="back"  rows="3" placeholder="Back (Answer)…"></textarea>
       <button id="save-card-btn">💾 Save Card</button>
     </section>
 
-    <!-- Review Button -->
-    <button id="view-cards-btn">📖 View Cards</button>
+    <!-- New Image Card -->
+    <section id="image-section">
+      <h2>New Image Card (per Chapter)</h2>
+      <input type="file" id="img-file" accept="image/*" />
+      <input id="img-def" placeholder="Image definition… (will show on back)" />
+      <button id="save-image-btn">🖼️ Upload Image</button>
+    </section>
+
+    <!-- View Buttons -->
+    <div class="view-buttons">
+      <button id="view-cards-btn">📖 View Text Cards</button>
+      <button id="view-images-btn">🖼️ View Image Cards</button>
+    </div>
 
     <!-- Rendered Cards -->
     <section id="cards-container"></section>
